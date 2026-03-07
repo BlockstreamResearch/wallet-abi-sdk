@@ -1,0 +1,9 @@
+{
+  "code": "invalid_request",
+  "message": "request abi_version mismatch",
+  "details": {
+    "field": "abi_version",
+    "expected": "wallet-abi-0.1",
+    "actual": "wallet-abi-9.9"
+  }
+}

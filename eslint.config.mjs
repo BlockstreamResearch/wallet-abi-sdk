@@ -15,7 +15,9 @@ export default tseslint.config(
     ignores: [
       "dist/**",
       "coverage/**",
+      "fixtures/**",
       "node_modules/**",
+      "src/vendor/**",
       "*.tgz",
       "scripts/**/*.mjs",
     ],

@@ -1,0 +1,21 @@
+{
+  "id": 2,
+  "jsonrpc": "2.0",
+  "result": {
+    "abi_version": "wallet-abi-0.1",
+    "request_id": "3d6f0a38-06c0-4a93-9dd8-72738d694a11",
+    "network": "localtest-liquid",
+    "status": "error",
+    "artifacts": {
+      "transport": "mock"
+    },
+    "error": {
+      "code": "funding",
+      "message": "insufficient funds",
+      "details": {
+        "asset_id": "5ac9f65c0efcc4775e0baec4ec03abdde22473cd3cf33c0419ca290e0751b225",
+        "missing_sat": 1250
+      }
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "abi_version": "wallet-abi-0.1",
+  "request_id": "3d6f0a38-06c0-4a93-9dd8-72738d694a11",
+  "network": "localtest-liquid",
+  "params": {
+    "inputs": [
+      {
+        "id": "wallet-input-0",
+        "utxo_source": {
+          "wallet": {
+            "filter": {
+              "asset": "none",
+              "amount": "none",
+              "lock": "none"
+            }
+          }
+        },
+        "unblinding": "wallet",
+        "sequence": 4294967295,
+        "finalizer": {
+          "type": "wallet"
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "id": "recipient-0",
+        "amount_sat": 1250,
+        "lock": {
+          "type": "script",
+          "script": ""
+        },
+        "asset": {
+          "type": "asset_id",
+          "asset_id": "5ac9f65c0efcc4775e0baec4ec03abdde22473cd3cf33c0419ca290e0751b225"
+        },
+        "blinder": "explicit"
+      }
+    ],
+    "fee_rate_sat_kvb": 100.0,
+    "lock_time": {
+      "Blocks": 0
+    }
+  },
+  "broadcast": false
+}

@@ -1,0 +1,25 @@
+{
+  "type": "simf",
+  "source_simf": "main := witness::sig_all;",
+  "internal_key": {
+    "external": {
+      "key": {
+        "identity": {
+          "ExternalXOnly": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+        },
+        "pubkey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+        "address": "tlq1qq2xvpcvfup5j8zscjq05u2wxxjcyewk7979f3mmz5l7uw5pqmx6xf5xy50hsn6vhkm5euwt72x878eq6zxx2z58hd7zrsg9qn"
+      }
+    }
+  },
+  "arguments": [
+    123, 34, 114, 101, 115, 111, 108, 118, 101, 100, 34, 58, 123, 125, 44, 34,
+    114, 117, 110, 116, 105, 109, 101, 95, 97, 114, 103, 117, 109, 101, 110,
+    116, 115, 34, 58, 123, 125, 125
+  ],
+  "witness": [
+    123, 34, 114, 101, 115, 111, 108, 118, 101, 100, 34, 58, 123, 125, 44, 34,
+    114, 117, 110, 116, 105, 109, 101, 95, 97, 114, 103, 117, 109, 101, 110,
+    116, 115, 34, 58, 91, 93, 125
+  ]
+}

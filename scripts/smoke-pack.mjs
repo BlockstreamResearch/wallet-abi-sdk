@@ -2,6 +2,7 @@ import {
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  existsSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -14,6 +15,7 @@ const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const tempDir = mkdtempSync(join(tmpdir(), "wallet-abi-sdk-alpha-"));
 const packDir = join(tempDir, "pack");
 const consumerDir = join(tempDir, "consumer");
+const npmCacheDir = join(tempDir, "npm-cache");
 const packageJson = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 );
@@ -47,6 +49,10 @@ try {
     ["install", "--silent", "--no-package-lock", tarballPath],
     {
       cwd: consumerDir,
+      env: {
+        ...process.env,
+        NPM_CONFIG_CACHE: npmCacheDir,
+      },
       stdio: "inherit",
     },
   );
@@ -54,10 +60,24 @@ try {
   writeFileSync(
     join(consumerDir, "esm.mjs"),
     [
-      'import { packageName } from "wallet-abi-sdk-alpha";',
+      'import { WalletAbiClient, WALLET_ABI_GET_CAPABILITIES_METHOD } from "wallet-abi-sdk-alpha";',
+      'import { createAppLinkTransport } from "wallet-abi-sdk-alpha/transports";',
+      'import initVendor from "wallet-abi-sdk-alpha/vendor";',
       "",
-      'if (packageName !== "wallet-abi-sdk-alpha") {',
-      "  throw new Error(`Unexpected ESM export: ${packageName}`);",
+      'if (typeof WalletAbiClient !== "function") {',
+      '  throw new Error("WalletAbiClient export is missing");',
+      "}",
+      "",
+      'if (typeof createAppLinkTransport !== "function") {',
+      '  throw new Error("createAppLinkTransport export is missing");',
+      "}",
+      "",
+      'if (typeof initVendor !== "function") {',
+      '  throw new Error("vendor export is missing");',
+      "}",
+      "",
+      'if (WALLET_ABI_GET_CAPABILITIES_METHOD !== "wallet_abi_get_capabilities") {',
+      "  throw new Error(`Unexpected protocol export: ${WALLET_ABI_GET_CAPABILITIES_METHOD}`);",
       "}",
       "",
       'console.log("esm-ok");',
@@ -67,10 +87,24 @@ try {
   writeFileSync(
     join(consumerDir, "cjs.cjs"),
     [
-      'const { packageName } = require("wallet-abi-sdk-alpha");',
+      'const { WalletAbiClient, WALLET_ABI_GET_CAPABILITIES_METHOD } = require("wallet-abi-sdk-alpha");',
+      'const { createAppLinkTransport } = require("wallet-abi-sdk-alpha/transports");',
+      'const initVendor = require("wallet-abi-sdk-alpha/vendor");',
       "",
-      'if (packageName !== "wallet-abi-sdk-alpha") {',
-      "  throw new Error(`Unexpected CJS export: ${packageName}`);",
+      'if (typeof WalletAbiClient !== "function") {',
+      '  throw new Error("WalletAbiClient export is missing");',
+      "}",
+      "",
+      'if (typeof createAppLinkTransport !== "function") {',
+      '  throw new Error("createAppLinkTransport export is missing");',
+      "}",
+      "",
+      'if (typeof initVendor.default !== "function") {',
+      '  throw new Error("vendor export is missing");',
+      "}",
+      "",
+      'if (WALLET_ABI_GET_CAPABILITIES_METHOD !== "wallet_abi_get_capabilities") {',
+      "  throw new Error(`Unexpected protocol export: ${WALLET_ABI_GET_CAPABILITIES_METHOD}`);",
       "}",
       "",
       'console.log("cjs-ok");',
@@ -96,6 +130,20 @@ try {
 
   if (!packedPackageJson.exports) {
     throw new Error("Packed package is missing an exports map.");
+  }
+
+  const vendoredWasmPath = join(
+    consumerDir,
+    "node_modules",
+    "wallet-abi-sdk-alpha",
+    "dist",
+    "vendor",
+    "lwk_wasm",
+    "lwk_wasm_bg.wasm",
+  );
+
+  if (!existsSync(vendoredWasmPath)) {
+    throw new Error("Packed package is missing the vendored lwk_wasm binary.");
   }
 } finally {
   rmSync(tempDir, { force: true, recursive: true });

@@ -1,0 +1,5 @@
+{
+  "main": "../dist/transports.cjs",
+  "module": "../dist/transports.js",
+  "types": "../dist/transports.d.ts"
+}

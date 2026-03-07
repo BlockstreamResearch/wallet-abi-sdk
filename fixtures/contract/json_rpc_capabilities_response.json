@@ -1,0 +1,10 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "abi_version": "wallet-abi-0.1",
+    "network": "localtest-liquid",
+    "signer_receive_address": "tlq1qq2xvpcvfup5j8zscjq05u2wxxjcyewk7979f3mmz5l7uw5pqmx6xf5xy50hsn6vhkm5euwt72x878eq6zxx2z58hd7zrsg9qn",
+    "signing_x_only_pubkey": "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+  }
+}

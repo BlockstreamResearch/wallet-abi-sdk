@@ -1,14 +1,22 @@
 {
   "name": "wallet-abi-sdk-alpha",
-  "version": "0.0.2",
-  "description": "Alpha scaffold for the wallet ABI SDK package.",
+  "version": "0.1.0",
+  "description": "Browser Wallet ABI SDK aligned with lwk_simplicity wallet_abi.",
   "type": "module",
   "packageManager": "bun@1.3.10",
   "engines": {
     "node": ">=24"
   },
   "files": [
-    "dist"
+    "dist",
+    "builders",
+    "client",
+    "helpers",
+    "protocol",
+    "schema",
+    "transports",
+    "vendor",
+    "wallet"
   ],
   "sideEffects": false,
   "keywords": [
@@ -27,24 +35,41 @@
   "homepage": "https://github.com/BlockstreamResearch/wallet-abi-sdk#readme",
   "publishConfig": {
     "access": "public",
-    "provenance": true
+    "provenance": false
   },
   "scripts": {
     "lint": "eslint .",
-    "lint-fix": "eslint . --fix && bun run format",
+    "lint:fix": "eslint . --fix && bun run format",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "test": "bun test",
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "build": "zshy && node ./scripts/fix-package-json.mjs",
+    "build": "rm -rf dist && zshy && node ./scripts/copy-vendor-files.mjs",
     "prepack": "bun run build",
     "pack:check": "bun pm pack --dry-run",
-    "lint:package": "publint .",
-    "attw": "attw --pack . --profile strict",
+    "lint:package": "bunx publint .",
+    "attw": "NPM_CONFIG_CACHE=.npm-cache attw --pack . --profile strict",
     "smoke:pack": "node ./scripts/smoke-pack.mjs",
     "check": "bun run lint && bun run format:check && bun run typecheck && bun run test && bun run build && bun run lint:package && bun run attw && bun run pack:check && bun run smoke:pack"
   },
-  "zshy": "./src/index.ts",
+  "zshy": {
+    "exports": {
+      ".": "./src/index.ts",
+      "./builders": "./src/builders.ts",
+      "./client": "./src/client.ts",
+      "./helpers": "./src/helpers.ts",
+      "./protocol": "./src/protocol.ts",
+      "./schema": "./src/schema.ts",
+      "./transports": "./src/transports.ts",
+      "./vendor": "./src/vendor.ts",
+      "./wallet": "./src/wallet.ts"
+    },
+    "noEdit": true
+  },
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "rfc4648": "^1.5.4"
+  },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.2",
     "@eslint/js": "^9.39.3",
@@ -71,6 +96,94 @@
         "default": "./dist/index.cjs"
       },
       "default": "./dist/index.js"
+    },
+    "./builders": {
+      "import": {
+        "types": "./dist/builders.d.ts",
+        "default": "./dist/builders.js"
+      },
+      "require": {
+        "types": "./dist/builders.d.cts",
+        "default": "./dist/builders.cjs"
+      },
+      "default": "./dist/builders.js"
+    },
+    "./client": {
+      "import": {
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.js"
+      },
+      "require": {
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
+      },
+      "default": "./dist/client.js"
+    },
+    "./helpers": {
+      "import": {
+        "types": "./dist/helpers.d.ts",
+        "default": "./dist/helpers.js"
+      },
+      "require": {
+        "types": "./dist/helpers.d.cts",
+        "default": "./dist/helpers.cjs"
+      },
+      "default": "./dist/helpers.js"
+    },
+    "./protocol": {
+      "import": {
+        "types": "./dist/protocol.d.ts",
+        "default": "./dist/protocol.js"
+      },
+      "require": {
+        "types": "./dist/protocol.d.cts",
+        "default": "./dist/protocol.cjs"
+      },
+      "default": "./dist/protocol.js"
+    },
+    "./schema": {
+      "import": {
+        "types": "./dist/schema.d.ts",
+        "default": "./dist/schema.js"
+      },
+      "require": {
+        "types": "./dist/schema.d.cts",
+        "default": "./dist/schema.cjs"
+      },
+      "default": "./dist/schema.js"
+    },
+    "./transports": {
+      "import": {
+        "types": "./dist/transports.d.ts",
+        "default": "./dist/transports.js"
+      },
+      "require": {
+        "types": "./dist/transports.d.cts",
+        "default": "./dist/transports.cjs"
+      },
+      "default": "./dist/transports.js"
+    },
+    "./vendor": {
+      "import": {
+        "types": "./dist/vendor.d.ts",
+        "default": "./dist/vendor.js"
+      },
+      "require": {
+        "types": "./dist/vendor.d.cts",
+        "default": "./dist/vendor.cjs"
+      },
+      "default": "./dist/vendor.js"
+    },
+    "./wallet": {
+      "import": {
+        "types": "./dist/wallet.d.ts",
+        "default": "./dist/wallet.js"
+      },
+      "require": {
+        "types": "./dist/wallet.d.cts",
+        "default": "./dist/wallet.cjs"
+      },
+      "default": "./dist/wallet.js"
     }
   }
 }
