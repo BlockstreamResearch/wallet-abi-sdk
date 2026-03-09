@@ -234,14 +234,9 @@ export class AssetBlindingFactor {
  * 32 bytes encoded as hex string.
  */
 export class AssetId {
+  private constructor();
   free(): void;
   [Symbol.dispose](): void;
-  /**
-   * Creates an `AssetId`
-   *
-   * Deprecated: use `from_string()` instead
-   */
-  constructor(asset_id: string);
   /**
    * Creates an `AssetId` from hex string
    */
@@ -2005,14 +2000,9 @@ export class Tip {
  * where you can actually see unblinded amounts and tx net-balance.
  */
 export class Transaction {
+  private constructor();
   free(): void;
   [Symbol.dispose](): void;
-  /**
-   * Creates a `Transaction`
-   *
-   * Deprecated: use `fromString()` instead.
-   */
-  constructor(tx_hex: string);
   /**
    * Creates a `Transaction` from hex-encoded consensus bytes.
    */
@@ -2029,12 +2019,6 @@ export class Transaction {
    * Return the consensus encoded bytes of the transaction.
    */
   toBytes(): Uint8Array;
-  /**
-   * Return the consensus encoded bytes of the transaction.
-   *
-   * Deprecated: use `toBytes()` instead.
-   */
-  bytes(): Uint8Array;
   /**
    * Return the fee of the transaction in the given asset.
    * At the moment the only asset that can be used as fee is the policy asset (LBTC for mainnet).

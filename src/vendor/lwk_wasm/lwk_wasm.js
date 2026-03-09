@@ -1067,22 +1067,8 @@ export class AssetId {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_assetid_free(ptr, 0);
     }
-    /**
-     * Creates an `AssetId`
-     *
-     * Deprecated: use `from_string()` instead
-     * @param {string} asset_id
-     */
-    constructor(asset_id) {
-        const ptr0 = passStringToWasm0(asset_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.assetid_new(ptr0, len0);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        this.__wbg_ptr = ret[0] >>> 0;
-        AssetIdFinalization.register(this, this.__wbg_ptr, this);
-        return this;
+    constructor() {
+        throw new Error('Use AssetId.fromString().');
     }
     /**
      * Creates an `AssetId` from hex string
@@ -6614,22 +6600,8 @@ export class Transaction {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_transaction_free(ptr, 0);
     }
-    /**
-     * Creates a `Transaction`
-     *
-     * Deprecated: use `fromString()` instead.
-     * @param {string} tx_hex
-     */
-    constructor(tx_hex) {
-        const ptr0 = passStringToWasm0(tx_hex, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.transaction_new(ptr0, len0);
-        if (ret[2]) {
-            throw takeFromExternrefTable0(ret[1]);
-        }
-        this.__wbg_ptr = ret[0] >>> 0;
-        TransactionFinalization.register(this, this.__wbg_ptr, this);
-        return this;
+    constructor() {
+        throw new Error('Use Transaction.fromString() or Transaction.fromBytes().');
     }
     /**
      * Creates a `Transaction` from hex-encoded consensus bytes.
@@ -6673,18 +6645,6 @@ export class Transaction {
      */
     toBytes() {
         const ret = wasm.transaction_toBytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
-    /**
-     * Return the consensus encoded bytes of the transaction.
-     *
-     * Deprecated: use `toBytes()` instead.
-     * @returns {Uint8Array}
-     */
-    bytes() {
-        const ret = wasm.transaction_bytes(this.__wbg_ptr);
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;

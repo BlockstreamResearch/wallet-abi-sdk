@@ -1,12 +1,12 @@
-import { createTransportResponseEnvelope } from "../../src/protocol.js";
-import type { WalletAbiTransportAdapter } from "../../src/transports.js";
+import type { WalletAbiJsonRpcRequest } from "../../src/protocol.js";
+import type { WalletAbiRequester } from "../../src/walletconnect.js";
 import {
   createWalletAbiJsonRpcProvider,
   type WalletAbiJsonRpcProvider,
   type WalletAbiProviderBridge,
 } from "../../src/wallet.js";
 
-export interface CreateMockTransportOptions {
+export interface CreateMockRequesterOptions {
   provider: WalletAbiJsonRpcProvider | WalletAbiProviderBridge;
   latency_ms?: number;
 }
@@ -25,26 +25,19 @@ function normalizeProvider(
     : createWalletAbiJsonRpcProvider(provider);
 }
 
-export function createMockTransport(
-  options: CreateMockTransportOptions,
-): WalletAbiTransportAdapter {
+export function createMockRequester(
+  options: CreateMockRequesterOptions,
+): WalletAbiRequester {
   const provider = normalizeProvider(options.provider);
   const latencyMs = options.latency_ms ?? 0;
 
   return {
-    kind: "mock",
-    async request(envelope, context) {
+    async request(request: WalletAbiJsonRpcRequest) {
       if (latencyMs > 0) {
         await sleep(latencyMs);
       }
 
-      const message = await provider.request(envelope.message);
-      return createTransportResponseEnvelope({
-        request_id: envelope.request_id,
-        origin: envelope.origin,
-        processed_at_ms: context.now(),
-        message,
-      });
+      return await provider.request(request);
     },
   };
 }

@@ -57,18 +57,68 @@ describe("contract fixtures", () => {
     ).toEqual(readJsonFixture("tx_create_response.json"));
     expect(
       roundTrip(
-        parseWalletAbiJsonRpcRequest(
-          readJsonFixture("json_rpc_capabilities_request.json"),
-        ),
+        parseWalletAbiJsonRpcRequest({
+          id: 1,
+          jsonrpc: "2.0",
+          method: "get_signer_receive_address",
+        }),
       ),
-    ).toEqual(readJsonFixture("json_rpc_capabilities_request.json"));
+    ).toEqual({
+      id: 1,
+      jsonrpc: "2.0",
+      method: "get_signer_receive_address",
+    });
     expect(
       roundTrip(
-        parseWalletAbiJsonRpcResponse(
-          readJsonFixture("json_rpc_capabilities_response.json"),
-        ),
+        parseWalletAbiJsonRpcResponse({
+          id: 1,
+          jsonrpc: "2.0",
+          result: {
+            signer_receive_address:
+              "tlq1qq2xvpcvfup5j8zscjq05u2wxxjcyewk7979f3mmz5l7uw5pqmx6xf5xy50hsn6vhkm5euwt72x878eq6zxx2z58hd7zrsg9qn",
+          },
+        }),
       ),
-    ).toEqual(readJsonFixture("json_rpc_capabilities_response.json"));
+    ).toEqual({
+      id: 1,
+      jsonrpc: "2.0",
+      result: {
+        signer_receive_address:
+          "tlq1qq2xvpcvfup5j8zscjq05u2wxxjcyewk7979f3mmz5l7uw5pqmx6xf5xy50hsn6vhkm5euwt72x878eq6zxx2z58hd7zrsg9qn",
+      },
+    });
+    expect(
+      roundTrip(
+        parseWalletAbiJsonRpcRequest({
+          id: 2,
+          jsonrpc: "2.0",
+          method: "get_raw_signing_x_only_pubkey",
+        }),
+      ),
+    ).toEqual({
+      id: 2,
+      jsonrpc: "2.0",
+      method: "get_raw_signing_x_only_pubkey",
+    });
+    expect(
+      roundTrip(
+        parseWalletAbiJsonRpcResponse({
+          id: 2,
+          jsonrpc: "2.0",
+          result: {
+            raw_signing_x_only_pubkey:
+              "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+          },
+        }),
+      ),
+    ).toEqual({
+      id: 2,
+      jsonrpc: "2.0",
+      result: {
+        raw_signing_x_only_pubkey:
+          "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+      },
+    });
     expect(
       roundTrip(
         parseWalletAbiJsonRpcRequest(

@@ -1,17 +1,17 @@
 # Wallet ABI SDK Alpha
 
-Browser-first Wallet ABI SDK for frontend apps integrating with the refactored
-`lwk_simplicity` wallet ABI.
+Browser-first Wallet ABI SDK for frontend apps integrating with the
+`lwk_simplicity` Wallet ABI over WalletConnect.
 
 ## Surface
 
-- `WalletAbiClient` for capability handshake and `tx_create` request flow
-- `protocol` helpers for JSON-RPC and app-link envelopes
+- `WalletAbiClient` for the 3 supported Wallet ABI RPC methods
+- `protocol` helpers for Wallet ABI JSON-RPC envelopes
 - `schema` types aligned to the Rust wire contract
 - `builders` for request construction
 - `helpers` for lazy `lwk_wasm` browser helpers
 - `wallet` bridge types for wallet/provider implementations
-- `transports` with built-in `createAppLinkTransport`
+- `walletconnect` helpers for namespace, chain, and requester wiring
 - `vendor` for direct `lwk_wasm` re-exports when low-level access is needed
 
 ## Example
@@ -19,40 +19,28 @@ Browser-first Wallet ABI SDK for frontend apps integrating with the refactored
 ```ts
 import {
   WalletAbiClient,
-  createAppLinkTransport,
-  createRuntimeParams,
-  createTxCreateRequest,
+  createWalletConnectRequester,
+  walletAbiNetworkToWalletConnectChain,
 } from "wallet-abi-sdk-alpha";
 
-async function awaitWalletCallback(): Promise<string> {
-  throw new Error("Hook this up to your wallet callback flow.");
-}
-
-const client = new WalletAbiClient({
-  origin: "https://app.example",
-  transport: createAppLinkTransport({
-    baseUrl: "https://wallet.example/connect",
-    async awaitResponse({ uri }) {
-      if (typeof window !== "undefined") {
-        window.open(uri, "_blank", "noopener,noreferrer");
-      }
-
-      return await awaitWalletCallback();
+const requester = createWalletConnectRequester({
+  chainId: walletAbiNetworkToWalletConnectChain("testnet-liquid"),
+  client: {
+    async request({ chainId, topic, request }) {
+      return await universalProvider.request({
+        chainId,
+        topic,
+        request,
+      });
     },
-  }),
-  callback: {
-    mode: "qr_roundtrip",
   },
 });
 
-const request = createTxCreateRequest({
-  network: "localtest-liquid",
-  params: createRuntimeParams({
-    inputs: [],
-    outputs: [],
-  }),
+const client = new WalletAbiClient({
+  requester,
 });
 
 await client.connect();
-const response = await client.requestTxCreate(request);
+const receiveAddress = await client.getSignerReceiveAddress();
+const pubkey = await client.getRawSigningXOnlyPubkey();
 ```

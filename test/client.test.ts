@@ -13,19 +13,16 @@ import { WalletAbiClient } from "../src/client.js";
 import type {
   TxCreateRequest,
   TxCreateResponse,
-  WalletAbiCapabilities,
+  WalletAbiAddress,
+  WalletAbiXOnlyPublicKeyHex,
 } from "../src/schema.js";
 import { TX_CREATE_ABI_VERSION } from "../src/schema.js";
-import { createMockTransport } from "./support/mockTransport.js";
+import { createMockRequester } from "./support/mockRequester.js";
 
-const capabilities: WalletAbiCapabilities = {
-  abi_version: TX_CREATE_ABI_VERSION,
-  network: "localtest-liquid",
-  signer_receive_address:
-    "tlq1qq2xvpcvfup5j8zscjq05u2wxxjcyewk7979f3mmz5l7uw5pqmx6xf5xy50hsn6vhkm5euwt72x878eq6zxx2z58hd7zrsg9qn",
-  signing_x_only_pubkey:
-    "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
-};
+const signerReceiveAddress: WalletAbiAddress =
+  "tlq1qq2xvpcvfup5j8zscjq05u2wxxjcyewk7979f3mmz5l7uw5pqmx6xf5xy50hsn6vhkm5euwt72x878eq6zxx2z58hd7zrsg9qn";
+const rawSigningXOnlyPubkey: WalletAbiXOnlyPublicKeyHex =
+  "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
 
 function createRequest(): TxCreateRequest {
   return createTxCreateRequest({
@@ -72,16 +69,20 @@ function createResponse(request: TxCreateRequest): TxCreateResponse {
 }
 
 describe("WalletAbiClient", () => {
-  test("connects once and caches wallet capabilities", async () => {
-    let capabilitiesCalls = 0;
+  test("connects once and caches getter responses", async () => {
+    let signerCalls = 0;
+    let pubkeyCalls = 0;
 
     const client = new WalletAbiClient({
-      origin: "https://app.example",
-      transport: createMockTransport({
+      requester: createMockRequester({
         provider: {
-          async getCapabilities() {
-            capabilitiesCalls += 1;
-            return capabilities;
+          async getSignerReceiveAddress() {
+            signerCalls += 1;
+            return signerReceiveAddress;
+          },
+          async getRawSigningXOnlyPubkey() {
+            pubkeyCalls += 1;
+            return rawSigningXOnlyPubkey;
           },
           async processRequest(request) {
             return createResponse(request);
@@ -91,10 +92,16 @@ describe("WalletAbiClient", () => {
       requestTimeoutMs: 1_000,
     });
 
-    expect(await client.connect()).toEqual(capabilities);
-    expect(await client.connect()).toEqual(capabilities);
-    expect(client.getCapabilities()).toEqual(capabilities);
-    expect(capabilitiesCalls).toBe(1);
+    expect(await client.connect()).toBeUndefined();
+    expect(await client.connect()).toBeUndefined();
+    expect(await client.getSignerReceiveAddress()).toBe(signerReceiveAddress);
+    expect(await client.getSignerReceiveAddress()).toBe(signerReceiveAddress);
+    expect(await client.getRawSigningXOnlyPubkey()).toBe(rawSigningXOnlyPubkey);
+    expect(await client.getRawSigningXOnlyPubkey()).toBe(rawSigningXOnlyPubkey);
+    expect(client.getCachedSignerReceiveAddress()).toBe(signerReceiveAddress);
+    expect(client.getCachedRawSigningXOnlyPubkey()).toBe(rawSigningXOnlyPubkey);
+    expect(signerCalls).toBe(1);
+    expect(pubkeyCalls).toBe(1);
   });
 
   test("sends tx_create requests through the configured transport", async () => {
@@ -102,11 +109,13 @@ describe("WalletAbiClient", () => {
     let seenRequest: TxCreateRequest | null = null;
 
     const client = new WalletAbiClient({
-      origin: "https://app.example",
-      transport: createMockTransport({
+      requester: createMockRequester({
         provider: {
-          async getCapabilities() {
-            return capabilities;
+          async getSignerReceiveAddress() {
+            return signerReceiveAddress;
+          },
+          async getRawSigningXOnlyPubkey() {
+            return rawSigningXOnlyPubkey;
           },
           async processRequest(currentRequest) {
             seenRequest = currentRequest;

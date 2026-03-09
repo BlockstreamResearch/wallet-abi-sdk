@@ -1,6 +1,6 @@
 {
   "name": "wallet-abi-sdk-alpha",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Browser Wallet ABI SDK aligned with lwk_simplicity wallet_abi.",
   "type": "module",
   "packageManager": "bun@1.3.10",
@@ -14,9 +14,9 @@
     "helpers",
     "protocol",
     "schema",
-    "transports",
     "vendor",
-    "wallet"
+    "wallet",
+    "walletconnect"
   ],
   "sideEffects": false,
   "keywords": [
@@ -60,16 +60,13 @@
       "./helpers": "./src/helpers.ts",
       "./protocol": "./src/protocol.ts",
       "./schema": "./src/schema.ts",
-      "./transports": "./src/transports.ts",
       "./vendor": "./src/vendor.ts",
-      "./wallet": "./src/wallet.ts"
+      "./wallet": "./src/wallet.ts",
+      "./walletconnect": "./src/walletconnect.ts"
     },
     "noEdit": true
   },
-  "dependencies": {
-    "fflate": "^0.8.2",
-    "rfc4648": "^1.5.4"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.2",
     "@eslint/js": "^9.39.3",
@@ -152,17 +149,6 @@
       },
       "default": "./dist/schema.js"
     },
-    "./transports": {
-      "import": {
-        "types": "./dist/transports.d.ts",
-        "default": "./dist/transports.js"
-      },
-      "require": {
-        "types": "./dist/transports.d.cts",
-        "default": "./dist/transports.cjs"
-      },
-      "default": "./dist/transports.js"
-    },
     "./vendor": {
       "import": {
         "types": "./dist/vendor.d.ts",
@@ -184,6 +170,17 @@
         "default": "./dist/wallet.cjs"
       },
       "default": "./dist/wallet.js"
+    },
+    "./walletconnect": {
+      "import": {
+        "types": "./dist/walletconnect.d.ts",
+        "default": "./dist/walletconnect.js"
+      },
+      "require": {
+        "types": "./dist/walletconnect.d.cts",
+        "default": "./dist/walletconnect.cjs"
+      },
+      "default": "./dist/walletconnect.js"
     }
   }
 }

@@ -1,37 +1,31 @@
 import {
-  WALLET_ABI_GET_CAPABILITIES_METHOD,
-  createGetCapabilitiesRequest,
+  GET_RAW_SIGNING_X_ONLY_PUBKEY_METHOD,
+  GET_SIGNER_RECEIVE_ADDRESS_METHOD,
+  WALLET_ABI_PROCESS_REQUEST_METHOD,
+  createGetRawSigningXOnlyPubkeyRequest,
+  createGetSignerReceiveAddressRequest,
   createProcessRequest,
-  createTransportRequestEnvelope,
   isJsonRpcErrorResponse,
-  isWalletAbiCapabilitiesResponse,
+  isWalletAbiGetRawSigningXOnlyPubkeyResponse,
+  isWalletAbiGetSignerReceiveAddressResponse,
   isWalletAbiProcessResponse,
-  type WalletAbiTransportCallback,
-  type WalletAbiTransportResponseEnvelope,
 } from "./protocol.js";
-import type {
-  WalletAbiDisplayUriPayload,
-  WalletAbiTransportAdapter,
-} from "./transports.js";
 import type {
   TxCreateRequest,
   TxCreateResponse,
-  WalletAbiCapabilities,
+  WalletAbiAddress,
+  WalletAbiXOnlyPublicKeyHex,
 } from "./schema.js";
+import type { WalletAbiRequester } from "./walletconnect.js";
 
 interface WalletAbiClientEventMap {
-  connected: WalletAbiCapabilities;
+  connected: undefined;
   disconnected: undefined;
-  display_uri: WalletAbiDisplayUriPayload;
-  response: WalletAbiTransportResponseEnvelope;
 }
 
 export interface WalletAbiClientOptions {
-  transport: WalletAbiTransportAdapter;
-  origin: string;
+  requester: WalletAbiRequester;
   requestTimeoutMs?: number;
-  callback?: WalletAbiTransportCallback;
-  clock?: () => number;
 }
 
 export class WalletAbiClientError extends Error {
@@ -41,27 +35,31 @@ export class WalletAbiClientError extends Error {
   }
 }
 
+function normalizeErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
 export class WalletAbiClient {
-  readonly #transport: WalletAbiTransportAdapter;
-  readonly #origin: string;
+  readonly #requester: WalletAbiRequester;
   readonly #requestTimeoutMs: number;
-  readonly #callback: WalletAbiTransportCallback | undefined;
-  readonly #clock: () => number;
   readonly #listeners = new Map<
     keyof WalletAbiClientEventMap,
     Set<(payload: unknown) => void>
   >();
 
-  #capabilities: WalletAbiCapabilities | null = null;
-  #connectPromise: Promise<WalletAbiCapabilities> | null = null;
+  #connectPromise: Promise<void> | null = null;
   #rpcRequestId = 0;
+  #connected = false;
+  #signerReceiveAddress: WalletAbiAddress | null = null;
+  #rawSigningXOnlyPubkey: WalletAbiXOnlyPublicKeyHex | null = null;
 
   constructor(options: WalletAbiClientOptions) {
-    this.#transport = options.transport;
-    this.#origin = options.origin;
+    this.#requester = options.requester;
     this.#requestTimeoutMs = options.requestTimeoutMs ?? 120_000;
-    this.#callback = options.callback;
-    this.#clock = options.clock ?? (() => Date.now());
   }
 
   on<K extends keyof WalletAbiClientEventMap>(
@@ -78,96 +76,121 @@ export class WalletAbiClient {
     };
   }
 
-  getCapabilities(): WalletAbiCapabilities | null {
-    return this.#capabilities;
+  isConnected(): boolean {
+    return this.#connected;
   }
 
-  async connect(): Promise<WalletAbiCapabilities> {
-    if (this.#capabilities !== null) {
-      return this.#capabilities;
+  getCachedSignerReceiveAddress(): WalletAbiAddress | null {
+    return this.#signerReceiveAddress;
+  }
+
+  getCachedRawSigningXOnlyPubkey(): WalletAbiXOnlyPublicKeyHex | null {
+    return this.#rawSigningXOnlyPubkey;
+  }
+
+  async connect(): Promise<void> {
+    if (this.#connected) {
+      return;
     }
 
     if (this.#connectPromise !== null) {
-      return await this.#connectPromise;
+      await this.#connectPromise;
+      return;
     }
 
     this.#connectPromise = (async () => {
-      await this.#transport.connect?.();
-
-      const response = await this.#sendJsonRpc(
-        crypto.randomUUID(),
-        createGetCapabilitiesRequest(this.#nextRpcRequestId()),
-      );
-
-      if (!isWalletAbiCapabilitiesResponse(response.message)) {
-        if (isJsonRpcErrorResponse(response.message)) {
-          throw new WalletAbiClientError(
-            `capabilities request failed: ${response.message.error.message}`,
-          );
-        }
-
-        throw new WalletAbiClientError(
-          `expected ${WALLET_ABI_GET_CAPABILITIES_METHOD} result`,
-        );
-      }
-
-      this.#capabilities = response.message.result;
-      this.#emit("connected", response.message.result);
-      return response.message.result;
+      await this.#requester.connect?.();
+      this.#connected = true;
+      this.#emit("connected", undefined);
     })();
 
     try {
-      return await this.#connectPromise;
+      await this.#connectPromise;
     } finally {
       this.#connectPromise = null;
     }
   }
 
   async disconnect(): Promise<void> {
-    this.#capabilities = null;
-    await this.#transport.disconnect?.();
+    this.#connected = false;
+    this.#signerReceiveAddress = null;
+    this.#rawSigningXOnlyPubkey = null;
+    await this.#requester.disconnect?.();
     this.#emit("disconnected", undefined);
   }
 
-  async requestTxCreate(request: TxCreateRequest): Promise<TxCreateResponse> {
-    const capabilities = await this.connect();
-
-    if (request.abi_version !== capabilities.abi_version) {
-      throw new WalletAbiClientError(
-        `request abi_version "${request.abi_version}" does not match wallet abi_version "${capabilities.abi_version}"`,
-      );
-    }
-
-    if (request.network !== capabilities.network) {
-      throw new WalletAbiClientError(
-        `request network "${request.network}" does not match wallet network "${capabilities.network}"`,
-      );
+  async getSignerReceiveAddress(): Promise<WalletAbiAddress> {
+    if (this.#signerReceiveAddress !== null) {
+      return this.#signerReceiveAddress;
     }
 
     const response = await this.#sendJsonRpc(
-      request.request_id,
+      createGetSignerReceiveAddressRequest(this.#nextRpcRequestId()),
+    );
+
+    if (isJsonRpcErrorResponse(response)) {
+      throw new WalletAbiClientError(
+        `${GET_SIGNER_RECEIVE_ADDRESS_METHOD} failed: ${response.error.message}`,
+      );
+    }
+
+    if (!isWalletAbiGetSignerReceiveAddressResponse(response)) {
+      throw new WalletAbiClientError(
+        `expected ${GET_SIGNER_RECEIVE_ADDRESS_METHOD} result`,
+      );
+    }
+
+    this.#signerReceiveAddress = response.result.signer_receive_address;
+    return this.#signerReceiveAddress;
+  }
+
+  async getRawSigningXOnlyPubkey(): Promise<WalletAbiXOnlyPublicKeyHex> {
+    if (this.#rawSigningXOnlyPubkey !== null) {
+      return this.#rawSigningXOnlyPubkey;
+    }
+
+    const response = await this.#sendJsonRpc(
+      createGetRawSigningXOnlyPubkeyRequest(this.#nextRpcRequestId()),
+    );
+
+    if (isJsonRpcErrorResponse(response)) {
+      throw new WalletAbiClientError(
+        `${GET_RAW_SIGNING_X_ONLY_PUBKEY_METHOD} failed: ${response.error.message}`,
+      );
+    }
+
+    if (!isWalletAbiGetRawSigningXOnlyPubkeyResponse(response)) {
+      throw new WalletAbiClientError(
+        `expected ${GET_RAW_SIGNING_X_ONLY_PUBKEY_METHOD} result`,
+      );
+    }
+
+    this.#rawSigningXOnlyPubkey = response.result.raw_signing_x_only_pubkey;
+    return this.#rawSigningXOnlyPubkey;
+  }
+
+  async processRequest(request: TxCreateRequest): Promise<TxCreateResponse> {
+    const response = await this.#sendJsonRpc(
       createProcessRequest(this.#nextRpcRequestId(), request),
     );
 
-    if (response.request_id !== request.request_id) {
+    if (isJsonRpcErrorResponse(response)) {
       throw new WalletAbiClientError(
-        `transport request_id mismatch: expected "${request.request_id}", got "${response.request_id}"`,
+        `wallet JSON-RPC error ${String(response.error.code)}: ${response.error.message}`,
       );
     }
 
-    if (isJsonRpcErrorResponse(response.message)) {
+    if (!isWalletAbiProcessResponse(response)) {
       throw new WalletAbiClientError(
-        `wallet JSON-RPC error ${String(response.message.error.code)}: ${response.message.error.message}`,
+        `expected ${WALLET_ABI_PROCESS_REQUEST_METHOD} result`,
       );
     }
 
-    if (!isWalletAbiProcessResponse(response.message)) {
-      throw new WalletAbiClientError(
-        "wallet returned a non-transaction JSON-RPC result",
-      );
-    }
+    return response.result;
+  }
 
-    return response.message.result;
+  async requestTxCreate(request: TxCreateRequest): Promise<TxCreateResponse> {
+    return this.processRequest(request);
   }
 
   #nextRpcRequestId(): number {
@@ -190,56 +213,38 @@ export class WalletAbiClient {
   }
 
   async #sendJsonRpc(
-    requestId: string,
-    message:
-      | ReturnType<typeof createGetCapabilitiesRequest>
+    request:
+      | ReturnType<typeof createGetSignerReceiveAddressRequest>
+      | ReturnType<typeof createGetRawSigningXOnlyPubkeyRequest>
       | ReturnType<typeof createProcessRequest>,
-  ): Promise<WalletAbiTransportResponseEnvelope> {
-    const createdAt = this.#clock();
-    const requestEnvelope = createTransportRequestEnvelope({
-      request_id: requestId,
-      origin: this.#origin,
-      created_at_ms: createdAt,
-      expires_at_ms: createdAt + this.#requestTimeoutMs,
-      message,
-      ...(this.#callback !== undefined ? { callback: this.#callback } : {}),
-    });
+  ) {
+    await this.connect();
 
-    const responsePromise = Promise.resolve(
-      this.#transport.request(requestEnvelope, {
-        now: this.#clock,
-        emitDisplayUri: (payload) => {
-          this.#emit("display_uri", payload);
-        },
-      }),
-    );
-
-    const response = await this.#withTimeout(
-      responsePromise,
-      `wallet transport request ${requestId} timed out after ${String(this.#requestTimeoutMs)}ms`,
-    );
-
-    if (response.message.id !== message.id) {
-      throw new WalletAbiClientError(
-        `JSON-RPC id mismatch: expected ${String(message.id)}, got ${String(response.message.id)}`,
+    try {
+      return await this.#withTimeout(
+        Promise.resolve(this.#requester.request(request)),
+        `wallet request ${request.method} timed out after ${String(this.#requestTimeoutMs)}ms`,
       );
-    }
+    } catch (error) {
+      if (error instanceof WalletAbiClientError) {
+        throw error;
+      }
 
-    this.#emit("response", response);
-    return response;
+      throw new WalletAbiClientError(normalizeErrorMessage(error));
+    }
   }
 
   async #withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined;
 
-    const timeout = new Promise<T>((_, reject) => {
+    const timeoutPromise = new Promise<never>((_, reject) => {
       timer = setTimeout(() => {
         reject(new WalletAbiClientError(message));
       }, this.#requestTimeoutMs);
     });
 
     try {
-      return await Promise.race([promise, timeout]);
+      return await Promise.race([promise, timeoutPromise]);
     } finally {
       if (timer !== undefined) {
         clearTimeout(timer);
